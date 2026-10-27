@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import './App.css'
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 const VOCABULARY_STEPS = [2, 5, 10, 15]
