@@ -34,7 +34,6 @@ function App() {
     try {
       const encodedCharacter = encodeURIComponent(search)
 
-      // Fetch the kanji details.
       const kanjiResponse = await fetch(
         `${API_BASE_URL}/kanji/${encodedCharacter}`
       )
@@ -50,7 +49,6 @@ function App() {
       const kanjiData = await kanjiResponse.json()
       setKanji(kanjiData)
 
-      // Fetch up to 15 vocabulary entries for the Show More feature.
       const vocabularyResponse = await fetch(
         `${API_BASE_URL}/kanji/${encodedCharacter}/vocabulary?limit=15`
       )
@@ -161,6 +159,28 @@ function App() {
                       {word.meanings.slice(0, 3).join('; ') ||
                         'No English meaning listed'}
                     </p>
+
+                    <section aria-label={`Example sentences for ${word.written_forms[0]}`}>
+                      <h5>Example sentences</h5>
+
+                      {word.examples?.length > 0 ? (
+                        <ul>
+                          {word.examples.map((example) => (
+                            <li key={example.sentence_id}>
+                              <p lang="ja">{example.japanese}</p>
+
+                              <p lang="ja" className="hiragana-reading">
+                                {example.hiragana}
+                              </p>
+
+                              <p lang="en">{example.english}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>No example sentences available yet.</p>
+                      )}
+                    </section>
                   </article>
                 ))}
 

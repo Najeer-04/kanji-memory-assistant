@@ -1,14 +1,19 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.services.kanji_service import search_kanji
 from backend.services.vocabulary_service import search_vocabulary
+from backend.services.example_service import search_examples
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=False,
     allow_methods=["GET"],
     allow_headers=["*"],
@@ -27,7 +32,7 @@ def get_kanji(character: str):
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Kanji '{character}' not found"
+            detail=f"Kanji '{character}' not found",
         )
 
     return result
@@ -38,13 +43,21 @@ def get_kanji_vocabulary(character: str, limit: int = 20):
     if len(character) != 1:
         raise HTTPException(
             status_code=400,
-            detail="Please provide exactly one character."
+            detail="Please provide exactly one character.",
         )
 
     if not 1 <= limit <= 100:
         raise HTTPException(
             status_code=400,
-            detail="Limit must be between 1 and 100."
+            detail="Limit must be between 1 and 100.",
         )
 
-    return search_vocabulary(character, limit)
+    vocabulary = search_vocabulary(character, limit)
+
+    for word in vocabulary:
+        word["examples"] = search_examples(
+            word["written_forms"],
+            limit=2,
+        )
+
+    return vocabulary
