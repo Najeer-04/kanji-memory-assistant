@@ -156,10 +156,5 @@ Candidates:
         if word["entry_id"] not in used_ids
     )
 
-    print(
-        f"Ollama reranked {len(valid_ids)} of "
-        f"{len(candidates)} candidates for {character}.",
-        flush=True,
-    )
 
     return ranked_candidates

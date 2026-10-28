@@ -1,16 +1,23 @@
+
 # Frontend dependencies and build output
 frontend/node_modules/
 frontend/dist/
 
-# Python
+# Python environments and generated files
 .venv/
 __pycache__/
+**/__pycache__/
 *.py[cod]
 
 # Environment variables and secrets
 .env
 .env.*
 !.env.example
+
+# Local databases and logs
+*.sqlite3
+*.db
+*.log
 
 # Editors and operating system
 .vscode/
