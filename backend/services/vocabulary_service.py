@@ -58,3 +58,34 @@ def search_vocabulary(character: str, limit: int = 20):
     ]
 
     return candidates[:limit]
+
+
+def get_all_vocabulary():
+    """Retrieve all vocabulary entries in one database query."""
+
+    query = """
+        SELECT
+            entry_id,
+            written_forms,
+            readings,
+            meanings,
+            priority_tags
+        FROM vocabulary
+        ORDER BY entry_id;
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+    return [
+        {
+            "entry_id": row[0],
+            "written_forms": row[1] or [],
+            "readings": row[2] or [],
+            "meanings": row[3] or [],
+            "priority_tags": row[4] or [],
+        }
+        for row in rows
+    ]

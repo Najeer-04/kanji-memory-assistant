@@ -29,3 +29,32 @@ def search_kanji(character: str):
         "kun_readings": row[3] or [],
         "meanings": row[4] or [],
     }
+
+
+def get_all_kanji():
+    query = """
+        SELECT
+            character,
+            stroke_count,
+            on_readings,
+            kun_readings,
+            meanings
+        FROM kanji
+        ORDER BY character;
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+    return [
+        {
+            "character": row[0],
+            "stroke_count": row[1],
+            "on_readings": row[2] or [],
+            "kun_readings": row[3] or [],
+            "meanings": row[4] or [],
+        }
+        for row in rows
+    ]
