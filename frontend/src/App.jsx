@@ -9,6 +9,7 @@ function App() {
   const [character, setCharacter] = useState('')
   const [kanji, setKanji] = useState(null)
   const [vocabulary, setVocabulary] = useState([])
+  const [mnemonic, setMnemonic] = useState(null)
   const [visibleLimit, setVisibleLimit] = useState(2)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,6 +23,7 @@ function App() {
       setError('Please enter a kanji.')
       setKanji(null)
       setVocabulary([])
+      setMnemonic(null)
       return
     }
 
@@ -29,11 +31,13 @@ function App() {
     setError('')
     setKanji(null)
     setVocabulary([])
+    setMnemonic(null)
     setVisibleLimit(2)
 
     try {
       const encodedCharacter = encodeURIComponent(search)
 
+      // Fetch kanji details
       const kanjiResponse = await fetch(
         `${API_BASE_URL}/kanji/${encodedCharacter}`
       )
@@ -42,13 +46,13 @@ function App() {
         if (kanjiResponse.status === 404) {
           throw new Error('Kanji not found.')
         }
-
         throw new Error('Could not load kanji details.')
       }
 
       const kanjiData = await kanjiResponse.json()
       setKanji(kanjiData)
 
+      // Fetch related vocabulary
       const vocabularyResponse = await fetch(
         `${API_BASE_URL}/kanji/${encodedCharacter}/vocabulary?limit=15`
       )
@@ -59,9 +63,26 @@ function App() {
 
       const vocabularyData = await vocabularyResponse.json()
       setVocabulary(vocabularyData)
+
+      // Generate RAG mnemonic
+      const mnemonicResponse = await fetch(
+        `${API_BASE_URL}/kanji/${encodedCharacter}/mnemonic`,
+        {
+          method: 'POST',
+        }
+      )
+
+      if (!mnemonicResponse.ok) {
+        throw new Error('Could not generate mnemonic.')
+      }
+
+      const mnemonicData = await mnemonicResponse.json()
+      setMnemonic(mnemonicData)
+
     } catch (err) {
       setKanji(null)
       setVocabulary([])
+      setMnemonic(null)
 
       setError(
         err instanceof TypeError
@@ -109,7 +130,9 @@ function App() {
       </form>
 
       {loading && (
-        <p role="status">Looking up kanji and vocabulary...</p>
+        <p role="status">
+          Looking up kanji, retrieving knowledge and generating mnemonic...
+        </p>
       )}
 
       {error && <p role="alert">{error}</p>}
@@ -125,18 +148,45 @@ function App() {
 
           <p>
             <strong>On'yomi:</strong>{' '}
-            {kanji.on_readings.join(', ') || 'None listed'}
+            {kanji.on_readings?.join(', ') || 'None listed'}
           </p>
 
           <p>
             <strong>Kun'yomi:</strong>{' '}
-            {kanji.kun_readings.join(', ') || 'None listed'}
+            {kanji.kun_readings?.join(', ') || 'None listed'}
           </p>
 
           <p>
             <strong>Meanings:</strong>{' '}
-            {kanji.meanings.join(', ') || 'None listed'}
+            {kanji.meanings?.join(', ') || 'None listed'}
           </p>
+
+          {mnemonic && (
+            <section aria-labelledby="mnemonic-heading">
+              <h3 id="mnemonic-heading">Memory Assistant</h3>
+
+              <p>
+                <strong>Mnemonic:</strong>
+              </p>
+              <p>{mnemonic.mnemonic}</p>
+
+              <p>
+                <strong>Reading used:</strong>{' '}
+                {mnemonic.reading_used}
+              </p>
+
+              <p>
+                <strong>Vocabulary connection:</strong>{' '}
+                {mnemonic.vocabulary_connection}
+              </p>
+
+              {mnemonic.model && (
+                <p>
+                  <small>Generated using {mnemonic.model}</small>
+                </p>
+              )}
+            </section>
+          )}
 
           <section aria-labelledby="vocabulary-heading">
             <h3 id="vocabulary-heading">Related vocabulary</h3>

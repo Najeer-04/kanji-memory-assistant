@@ -24,8 +24,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Raw datasets
-data/raw/
-
-# Tatoeba datasets
+# Raw datasets and Tatoeba data
 data/
+
+# ChromaDB persistent storage and other backend data
+backend/data/

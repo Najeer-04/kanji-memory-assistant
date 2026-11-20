@@ -1,0 +1,104 @@
+
+[
+  {
+    "query": "Which kanji means studying and learning?",
+    "expected_kanji": ["学"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji represents resting or taking a break?",
+    "expected_kanji": ["休"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji is associated with eating food?",
+    "expected_kanji": ["食"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji means bright or shining?",
+    "expected_kanji": ["輝"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji is associated with drinking?",
+    "expected_kanji": ["飲"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji represents happiness or good fortune?",
+    "expected_kanji": ["幸"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji means water?",
+    "expected_kanji": ["水"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji represents fire?",
+    "expected_kanji": ["火"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji means mountain?",
+    "expected_kanji": ["山"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji represents a river?",
+    "expected_kanji": ["川"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji represents a person or human being?",
+    "expected_kanji": ["人"],
+    "category": "meaning"
+  },
+  {
+    "query": "Which kanji means reading a book?",
+    "expected_kanji": ["読"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji represents writing?",
+    "expected_kanji": ["書"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji means looking or seeing?",
+    "expected_kanji": ["見"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji represents listening or hearing?",
+    "expected_kanji": ["聞"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji represents going somewhere?",
+    "expected_kanji": ["行"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji means coming?",
+    "expected_kanji": ["来"],
+    "category": "activity"
+  },
+  {
+    "query": "Which kanji represents a car or vehicle?",
+    "expected_kanji": ["車"],
+    "category": "objects"
+  },
+  {
+    "query": "Which kanji represents electricity?",
+    "expected_kanji": ["電"],
+    "category": "objects"
+  },
+  {
+    "query": "Which kanji represents the sun or daytime?",
+    "expected_kanji": ["日"],
+    "category": "meaning"
+  }
+]
+

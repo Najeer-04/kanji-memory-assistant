@@ -6,7 +6,7 @@ import urllib.request
 
 from backend.services.vocabulary_service import search_vocabulary
 from backend.services.example_service import search_examples
-from backend.services.vector_store_service import search_kanji_documents
+from backend.services.vector_store_service import get_kanji_document
 
 
 # --------------------------------------------------
@@ -19,7 +19,6 @@ OLLAMA_TIMEOUT = 120
 
 VOCABULARY_LIMIT = 5
 EXAMPLES_PER_WORD = 1
-RETRIEVAL_LIMIT = 3
 
 TEMPERATURE = 0.4
 
@@ -83,7 +82,7 @@ def extract_terms(text: str) -> set[str]:
 # --------------------------------------------------
 
 def retrieve_kanji_context(character: str) -> dict:
-    """Retrieve vocabulary and example sentences."""
+    """Retrieve vocabulary and example sentences from PostgreSQL."""
 
     vocabulary = search_vocabulary(
         character,
@@ -119,25 +118,18 @@ def retrieve_kanji_context(character: str) -> dict:
 
 
 # --------------------------------------------------
-# ChromaDB retrieval
+# Exact ChromaDB retrieval
 # --------------------------------------------------
 
-def retrieve_rag_context(
-    character: str,
-    meanings: list[str]
-) -> list[dict]:
-    """Retrieve semantically relevant kanji knowledge."""
+def retrieve_rag_context(character: str) -> dict | None:
+    """
+    Retrieve the exact knowledge document for the target kanji.
 
-    query = (
-        f"Japanese kanji: {character}. "
-        f"Meanings: {', '.join(meanings)}. "
-        f"Related Japanese vocabulary and learning information."
-    )
+    This avoids accidentally providing documents belonging
+    to other kanji during mnemonic generation.
+    """
 
-    return search_kanji_documents(
-        query=query,
-        limit=RETRIEVAL_LIMIT,
-    )
+    return get_kanji_document(character)
 
 
 # --------------------------------------------------
@@ -350,16 +342,10 @@ def call_ollama(prompt: str, schema: dict) -> dict:
 def build_prompt(
     character: str,
     meanings: list[str],
-    retrieved_context: list[dict],
+    retrieved_context: dict,
 ) -> str:
 
-    context_text = "\n\n".join(
-        item["document"]
-        for item in retrieved_context
-    )
-
-    if not context_text:
-        context_text = "No documents were retrieved from ChromaDB."
+    context_text = retrieved_context["document"]
 
     return f"""
 Create a memorable visual mnemonic for a Japanese kanji.
@@ -369,7 +355,7 @@ VERIFIED INFORMATION FROM KANJIDIC2
 Kanji: {character}
 Meanings: {json.dumps(meanings, ensure_ascii=False)}
 
-RETRIEVED KNOWLEDGE FROM CHROMADB
+EXACT RETRIEVED KNOWLEDGE FROM CHROMADB
 
 {context_text}
 
@@ -378,10 +364,8 @@ TASK: VISUAL MNEMONIC
 Create ONE simple visual scene that helps the learner
 remember the kanji's primary meaning.
 
-Use the retrieved knowledge as supporting context.
-The verified information above identifies the target kanji.
-Do not confuse another kanji in the retrieved documents
-with the target kanji.
+The retrieved document belongs to the exact target kanji.
+Use its readings and vocabulary as supporting context.
 
 RULES:
 
@@ -492,11 +476,14 @@ def generate_mnemonic(
     context = retrieve_kanji_context(character)
     vocabulary = context["vocabulary"]
 
-    # 2. Retrieve semantically relevant knowledge from ChromaDB.
-    rag_context = retrieve_rag_context(
-        character,
-        meanings,
-    )
+    # 2. Retrieve the exact target document from ChromaDB.
+    rag_context = retrieve_rag_context(character)
+
+    if rag_context is None:
+        raise RuntimeError(
+            f"No ChromaDB knowledge document found for {character}. "
+            "Run the kanji ingestion script first."
+        )
 
     # 3. Select a verified reading.
     valid_readings = on_readings + kun_readings
@@ -516,7 +503,7 @@ def generate_mnemonic(
         meanings,
     )
 
-    # 5. Build prompt with retrieved RAG context.
+    # 5. Build prompt using exact retrieved context.
     prompt = build_prompt(
         character=character,
         meanings=meanings,
@@ -566,8 +553,9 @@ def generate_mnemonic(
                 "vocabulary": vocabulary,
             },
             "rag_retrieval": {
-                "document_count": len(rag_context),
-                "documents": rag_context,
+                "document_count": 1,
+                "documents": [rag_context],
+                "retrieval_type": "exact",
             },
             "model": OLLAMA_MODEL,
         }

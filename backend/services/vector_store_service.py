@@ -53,15 +53,47 @@ def store_kanji_document(kanji: dict, vocabulary: list[dict]):
         metadatas=[
             {
                 "character": character,
-                "type": "kanji"
+                "type": "kanji",
             }
-        ]
+        ],
     )
 
     return {
         "character": character,
         "document": document,
-        "collection_count": collection.count()
+        "collection_count": collection.count(),
+    }
+
+
+# --------------------------------------------------
+# Exact retrieval
+# --------------------------------------------------
+
+def get_kanji_document(character: str) -> dict | None:
+    """
+    Retrieve the exact document for a kanji using its ChromaDB ID.
+
+    Unlike semantic search, this does not calculate embedding similarity.
+    """
+
+    document_id = f"kanji_{character}"
+
+    result = collection.get(
+        ids=[document_id],
+        include=[
+            "documents",
+            "metadatas",
+        ],
+    )
+
+    if not result["ids"]:
+        return None
+
+    return {
+        "document": result["documents"][0],
+        "metadata": result["metadatas"][0],
+        "id": result["ids"][0],
+        "retrieval_type": "exact",
     }
 
 
@@ -71,7 +103,7 @@ def store_kanji_document(kanji: dict, vocabulary: list[dict]):
 
 def search_kanji_documents(
     query: str,
-    limit: int = 3
+    limit: int = 3,
 ) -> list[dict]:
     """Retrieve semantically relevant documents from ChromaDB."""
 
@@ -88,8 +120,8 @@ def search_kanji_documents(
         include=[
             "documents",
             "metadatas",
-            "distances"
-        ]
+            "distances",
+        ],
     )
 
     retrieved_documents = []
@@ -97,12 +129,13 @@ def search_kanji_documents(
     for document, metadata, distance in zip(
         results["documents"][0],
         results["metadatas"][0],
-        results["distances"][0]
+        results["distances"][0],
     ):
         retrieved_documents.append({
             "document": document,
             "metadata": metadata,
-            "distance": distance
+            "distance": distance,
+            "retrieval_type": "semantic",
         })
 
     return retrieved_documents

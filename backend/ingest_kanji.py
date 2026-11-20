@@ -66,7 +66,6 @@ def build_vocabulary_mapping(kanji_list, vocabulary_list):
         for character in matched_kanji:
             vocabulary_by_kanji[character].append(word)
 
-    # Rank and limit vocabulary for each kanji.
     for character, words in vocabulary_by_kanji.items():
         words.sort(
             key=lambda word: (
@@ -117,8 +116,43 @@ def build_document(kanji, vocabulary):
     return "\n".join(lines)
 
 
+def get_vocabulary_metadata(vocabulary):
+    """Calculate priority counts from selected vocabulary."""
+
+    common_tags = {"ichi1", "ichi2", "news1", "news2"}
+
+    common_vocab_count = 0
+    nf_vocab_count = 0
+    top_frequency_count = 0
+
+    for word in vocabulary:
+        tags = set(word.get("priority_tags") or [])
+
+        if tags.intersection(common_tags):
+            common_vocab_count += 1
+
+        nf_ranks = [
+            int(match.group(1))
+            for tag in tags
+            if (match := re.fullmatch(r"nf(\d{2})", tag))
+        ]
+
+        if nf_ranks:
+            nf_vocab_count += 1
+
+        if any(rank <= 5 for rank in nf_ranks):
+            top_frequency_count += 1
+
+    return {
+        "vocabulary_count": len(vocabulary),
+        "common_vocab_count": common_vocab_count,
+        "nf_vocab_count": nf_vocab_count,
+        "top_frequency_count": top_frequency_count,
+    }
+
+
 def preview_kanji(target, kanji_list, vocabulary_mapping):
-    """Preview a document without storing it in ChromaDB."""
+    """Preview a document and metadata without storing it."""
 
     kanji = next(
         (item for item in kanji_list if item["character"] == target),
@@ -130,11 +164,13 @@ def preview_kanji(target, kanji_list, vocabulary_mapping):
         return
 
     vocabulary = vocabulary_mapping.get(target, [])
-    document = build_document(kanji, vocabulary)
 
     print("\n========== DOCUMENT PREVIEW ==========")
-    print(document)
-    print("\nVocabulary entries:", len(vocabulary))
+    print(build_document(kanji, vocabulary))
+
+    print("\nMetadata preview:")
+    print(get_vocabulary_metadata(vocabulary))
+
     print("\nNo data has been inserted into ChromaDB.")
 
 
@@ -159,18 +195,17 @@ def ingest_documents(kanji_list, vocabulary_mapping):
             character = kanji["character"]
             vocabulary = vocabulary_mapping.get(character, [])
 
-            document = build_document(kanji, vocabulary)
-
-            documents.append(document)
+            documents.append(build_document(kanji, vocabulary))
             ids.append(f"kanji_{character}")
 
-            metadatas.append({
+            metadata = {
                 "character": character,
                 "type": "kanji",
-                "vocabulary_count": len(vocabulary),
-            })
+            }
 
-        # Generate embeddings for the entire batch.
+            metadata.update(get_vocabulary_metadata(vocabulary))
+            metadatas.append(metadata)
+
         embeddings = embedding_model.encode(
             documents,
             batch_size=32,
@@ -178,7 +213,6 @@ def ingest_documents(kanji_list, vocabulary_mapping):
             convert_to_numpy=True,
         )
 
-        # Insert or update the documents in ChromaDB.
         collection.upsert(
             ids=ids,
             documents=documents,
@@ -187,7 +221,6 @@ def ingest_documents(kanji_list, vocabulary_mapping):
         )
 
         stored += len(batch_kanji)
-
         print(f"Processed {stored}/{total} documents")
 
     print("\n========== INGESTION COMPLETE ==========")
@@ -197,6 +230,7 @@ def ingest_documents(kanji_list, vocabulary_mapping):
 
 def main():
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "--preview",
         metavar="KANJI",
